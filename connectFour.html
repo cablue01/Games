@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>Connect Four practice game</title>
+	<style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+</head>
+
+<body>
+	<canvas id="myCanvas" width="880" height="720"></canvas>
+	<script>
+		var canvas = document.getElementById("myCanvas");
+		var ctx = canvas.getContext("2d");
+		var moves = [];
+		var gameActive = false;
+		var playerTurn = 'red';
+		var gameMessage = 'press space to begin';
+
+		// variables for drawing the spaces
+		var firstRowY = 580;
+		var firstColX = 100;
+		var rowHeight = 100;
+		var colWidth = 100;
+
+		// row and col of last move
+		var lastRow = -1;
+		var lastCol = '';
+
+		var cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+		const colOffset = (currCol, offset) => cols[cols.indexOf(currCol) + offset];
+
+		function getBoard() {
+			return {'A': ['white', 'white', 'white', 'white', 'white', 'white'],
+					 'B': ['white', 'white', 'white', 'white', 'white', 'white'],
+					 'C': ['white', 'white', 'white', 'white', 'white', 'white'],
+					 'D': ['white', 'white', 'white', 'white', 'white', 'white'],
+					 'E': ['white', 'white', 'white', 'white', 'white', 'white'],
+					 'F': ['white', 'white', 'white', 'white', 'white', 'white'],
+					 'G': ['white', 'white', 'white', 'white', 'white', 'white'],
+					}
+		}
+
+		var board = getBoard();
+
+		var clearBoard = function() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+
+		function draw() {
+			// clear the screen to start with
+			clearBoard();
+
+			// draw the game board on the canvas
+			ctx.beginPath();
+			ctx.rect(40, 40, 800, 600);
+			ctx.fillStyle = "#006600";
+			ctx.fill();
+			ctx.closePath();
+
+			// draw all the spaces
+			for (var col = 65; col < 72; col++) {
+				var c = String.fromCharCode(col);
+
+				for (var row = 0, offset = 0; row < 6; row++) {
+					ctx.beginPath();
+					// (x, y, radius, ?, ?, ?)
+					ctx.arc(firstColX + (col - 65) * colWidth, firstRowY - (row * rowHeight), 35, 0, Math.PI * 2, false);
+					ctx.fillStyle = board[c][row];
+					ctx.fill();
+					ctx.strokeStyle = "blue";
+					ctx.stroke();
+					ctx.closePath();
+				}
+			}
+
+			// draw text to the screen
+			ctx.font = "16px Arial";
+			ctx.fillStyle = "#0095DD";
+			ctx.fillText(gameMessage, 8, 20);
+		}
+
+		function getAvailableMoves() {
+			var result = [];
+			for (var i of Object.keys(board)) {
+				if (board[i][5] === 'white') result.push(i)
+			}
+			return result
+		}
+
+		var colFull = (column) => board[column][5] != 'white';
+
+		function checkWin() {
+			// checks if the last move won the game
+		    if (lastRow > 2) {
+		      var last4 = board[lastCol].slice(lastRow - 3, lastRow);
+		      if (last4.every(x=>x==playerTurn)) return true
+		    }
+
+			// check current row win
+		    var count = 0;
+		    for (var c of cols) {
+		      board[c][lastRow] == playerTurn ? count++ : count = 0
+		      if (count >= 4) return true
+		    }
+
+			// diagonals
+		    count = 0;
+		    for (var oS = 0, stop = false; oS >= -3 && !stop; oS--) {
+		      var newCol = colOffset(lastCol, oS);
+		      var newRow = lastRow + oS;
+		      newCol && board[newCol][newRow] === playerTurn ? count++ : stop = true
+		    }
+		    if (count >= 4) return true
+
+		    for (var oS = 1, stop = false; oS <= 3 && !stop; oS++) {
+		      var newCol = colOffset(lastCol, oS);
+		      var newRow = lastRow + oS;
+		      newCol && board[newCol][newRow] === playerTurn ? count++ : stop = true
+		    }
+		    if (count >= 4) return true
+
+			// second diagonal
+			count = 0;
+		    for (var cOs = 0, rOs = 0, stop = false; cOs >= -3 && !stop; cOs--, rOs++) {
+		      var newCol = colOffset(lastCol, cOs);
+		      var newRow = lastRow + rOs;
+
+		      if (!newCol) stop = true
+		      if (newCol && board[newCol][newRow] === playerTurn) count++
+		      else stop = true
+		    }
+			if (count >= 4) return true
+
+		    for (var cOs = 1, rOs = -1, stop = false; cOs <= 3 && !stop; cOs++, rOs--) {
+		      var newCol = colOffset(lastCol, cOs);
+		      var newRow = lastRow + rOs;
+
+		      if (!newCol) stop = true
+		      if (newCol && board[newCol][newRow] === playerTurn) count++
+		      else stop = true
+		    }
+		    if (count >= 4) return true
+
+		}
+
+		function getWinner() {
+			// return undefined if no winner
+			// return color if winner
+			// return draw if board is full and no winner
+			var bFull = Object.keys(board).every(col=>colFull(col))
+
+			if (checkWin()) {
+				gameMessage = playerTurn + ' won the game. press space to begin new game';
+				gameActive = false;
+				return playerTurn;
+			} else if (bFull) {
+				gameMessage = 'Game ended in a draw. Press space to start new game.'
+				gameActive = false;
+				return 'draw';
+			}
+		}
+
+
+		function makeMove(colChosen, player) {
+			// find index for first white value in array
+			if (!colFull(colChosen)) {
+				var idx = [];
+				var col = board[colChosen];
+				lastCol = colChosen;
+
+				col.forEach(function(value, i) {
+					if (value == 'white') idx.push(i)
+				});
+
+				lastRow = idx[0];
+				col[lastRow] = player;
+
+				if (!getWinner()) {
+					playerTurn = player == 'red' ? 'yellow' : 'red';
+					gameMessage = playerTurn == 'red' ? 'your turn press a-g for column' : 
+														'waiting for computer to make move';
+				} 
+				draw();
+				return true
+			} else {
+				gameMessage = 'column ' + colChosen + ' is full. please pick another.'
+				return false;
+			}
+		}
+
+		function aiBustAMove() {
+			var moves = getAvailableMoves();
+			if (moves.length) {
+				var choice = moves[Math.floor(Math.random() * moves.length)];
+				makeMove(choice, 'yellow');	
+			} else {
+				// who won?
+				winner = getWinner();
+
+				// if no one won that's no fun!
+				gameActive = false;
+				draw();
+			}	
+		}
+
+		function keyDownHandler(e) {
+			var colChosen = String.fromCharCode(e.keyCode);
+
+			if (gameActive && playerTurn === 'red' && board[colChosen]) {
+				var goodMove = makeMove(colChosen, 'red')
+				if (goodMove && gameActive) setTimeout(function() {aiBustAMove()}, 2000)
+			} else if (!gameActive && e.keyCode == 32) {
+				gameActive = true;
+				board = getBoard();
+				gameMessage = 'new game started. press a-g for column';
+				playerTurn = 'red';
+			}
+			draw();
+		}
+
+		// draw the blank board before player makes first move
+		draw();
+
+		// listen for player moves
+		document.addEventListener("keydown", keyDownHandler, false);
+		//document.addEventListener("keyup", keyUpHandler, false);
+	</script>
+</body>
+</html>
