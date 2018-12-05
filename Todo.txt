@@ -1,3 +1,8 @@
+_ _ it should keep track of lastRow and lastCol from most recent move
+_ _ it should recognize when the last player who made a move won the game
+_X_ create a branch for the next release
+_ _ link the branch to your local git before working on it
+
 _X_ keep track of whether you are in a game or not
 _X_ have the user press space bar to start a game (do not allow moves till then)
 _X_ start prelim AI to make move after every player move
@@ -9,5 +14,4 @@ _X_ game message at top of screen should be stored as a var and used in draw
 _X_ hitting space when game is not active should clear the board
 _X_ when new game starts after a draw game will not accept player move
 _X_ when user selects column that is full user should be alerted and move cancelled, still player turn
-_ _ it should keep track of lastRow and lastCol from most recent move
-_ _ it should recognize when the last player who made a move won the game
+
